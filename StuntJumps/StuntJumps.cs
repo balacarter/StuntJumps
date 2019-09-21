@@ -23,7 +23,7 @@ namespace StuntJumps // IMPORTANT REPLACE THIS WITH YOUR MODS NAME
         bool firstTime = true;
         string ModName = "Stunt Jumps";
         string Developer = "scriptHijo";
-        string Version = "1.0";
+        string Version = "1.0"; 
         string stats;
 
         //Native UI vars
