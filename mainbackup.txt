@@ -1,0 +1,195 @@
+using System;
+using System.Windows.Forms;
+using GTA;
+using GTA.Native;
+using GTA.Math;
+
+namespace ModName // IMPORTANT REPLACE THIS WITH YOUR MODS NAME
+{
+    public class StuntJumps : Script
+    {
+        /// These variables are for Mod Information on startup
+        bool firstTime = true;
+        string ModName = "Stunt Jumps";
+        string Developer = "scriptHijo";
+        string Version = "1.0";
+        string stats;
+
+        Player player = Game.Player;
+        Ped ped = Game.Player.Character;
+
+        float startRoll;
+        float startPitch;
+        float startYaw;
+        float startSpeed;
+
+        float maxYaw = 0;
+        float maxPitch = 0;
+        float maxRoll = 0;
+
+        float pitchRot = 0;
+        float yawRot = 0;
+        float rollRot = 0;
+
+        float degRotated;
+
+        float score;
+        float totalScore;
+        float highScore = 0;
+
+        int multiply;
+
+        bool fresh = true;
+
+
+
+        public StuntJumps()
+        {
+            Tick += onTick;
+            KeyDown += onKeyDown;
+            Interval = 1;
+        }
+
+        private void onTick(object sender, EventArgs e)
+        {
+            // Mod info
+            if (firstTime)
+            {
+                UI.Notify(ModName + " " + Version + " by " + Developer + " Loaded");
+                firstTime = false;
+            }
+            if (ped.IsInVehicle())
+            {
+                Vehicle veh = ped.CurrentVehicle;
+                float roll = Function.Call<float>(Hash.GET_ENTITY_ROLL, veh);
+                float pitch = Function.Call<float>(Hash.GET_ENTITY_PITCH, ped);
+                Vector3 rotVect = Function.Call<Vector3>(Hash.GET_ENTITY_ROTATION, veh, false);
+                float yaw = rotVect.Z;
+
+
+
+                if (Function.Call<bool>(Hash.IS_ENTITY_IN_AIR, veh))
+                {
+
+                    if (fresh)
+                    {
+                        maxYaw = yaw;
+                        maxPitch = pitch;
+                        maxRoll = roll;
+
+                        startSpeed = veh.Speed;
+                        fresh = false;
+                    }
+
+
+                    if (changeInDegrees(maxPitch, pitch) > 3)
+                    {
+                        pitchRot += changeInDegrees(maxPitch, pitch);
+                        maxPitch = pitch;
+                    }
+
+
+                    if (changeInDegrees(maxYaw, yaw) > 10)
+                    {
+                        yawRot += changeInDegrees(maxYaw, yaw);
+                        maxYaw = yaw;
+                    }
+
+
+                    if (changeInDegrees(maxRoll, roll) > 10)
+                    {
+                        rollRot += changeInDegrees(maxRoll, roll);
+                        maxRoll = roll;
+                    }
+
+
+                    degRotated = pitchRot + yawRot + rollRot;
+
+                    if ((int)degRotated / 360 < 1)
+                    {
+                        multiply = 1;
+                    }
+                    else multiply = (int)degRotated / 360;
+
+                    score = (degRotated * multiply) + (startSpeed / 10);
+
+                    if (score > 0)
+                    {
+                        stats = "Score: ~b~" + score.ToString("F") + "~s~ , Multiplier: ~g~~h~" + multiply + ", " + degRotated.ToString("f");
+                        Function.Call(Hash._SET_TEXT_COMPONENT_FORMAT, "STRING");
+                        Function.Call(Hash._ADD_TEXT_COMPONENT_STRING, stats);
+                        Function.Call(Hash._0x238FFE5C7B0498A6﻿, 0, 0, 0, -1);
+                    }
+
+                }
+                else
+                {
+
+                    if(!fresh && ped.IsInVehicle() && veh.HeightAboveGround < 0.9 && score > 300)
+                    {
+                        totalScore += score;
+                        if (score > highScore)
+                        {
+                            UI.Notify("New highscore!");
+                            highScore = score;
+                        }
+                            
+
+                        UI.Notify("Score: ~g~" + score);
+                        UI.Notify("High Score: ~b~" + highScore);
+                        UI.Notify("Total Score: ~r~" + totalScore);
+
+                        pitchRot = 0;
+                        yawRot = 0;
+                        rollRot = 0;
+                        fresh = true;
+
+
+                    }
+                    else if(!fresh && ped.IsInVehicle() && veh.HeightAboveGround > 0.9)
+                    {
+
+                    }
+                    else
+                    {
+                        pitchRot = 0;
+                        yawRot = 0;
+                        rollRot = 0;
+                        fresh = true;
+                    }
+
+
+                }
+
+            }
+            else
+            {
+                pitchRot = 0;
+                yawRot = 0;
+                rollRot = 0;
+                fresh = true;
+            }
+
+        }
+
+        private void onKeyDown(object sender, KeyEventArgs e)
+        {
+        }
+
+        private float changeInDegrees(float oldDegree, float newDegree)
+        {
+
+            return Math.Abs(Math.Abs(oldDegree) - Math.Abs(newDegree));
+        }
+
+        private bool flipped(float prev, float cur)
+        {
+            if (prev < 0 && cur > 0)
+                return true;
+            else if (cur < 0 && prev > 0)
+                return true;
+            else return false;
+        }
+
+    }
+}
